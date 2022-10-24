@@ -35,7 +35,7 @@ log.txt will contain the number of lines in the project
 #include <chrono>
 
 
-class Quickprofileriler
+class QuickProfiler
 {
 public:
 	std::chrono::system_clock::time_point t0;
@@ -189,7 +189,7 @@ unsigned int ProcessFiles(std::wstring path, std::unordered_set<std::wstring> so
 
 int main()
 {
-	Quickprofileriler profiler;
+	QuickProfiler profiler;
 	TCHAR currentDirectory[MAX_PATH];
 	DWORD result;
 	profiler.Start();
