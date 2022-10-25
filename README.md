@@ -21,7 +21,7 @@ loc.txt will contain the number of lines in the project
 e.g. "count lines in the current folder and subfolders recursively for .h, .hpp and .cpp files"  
 **clocw**  
   
-- The second argument is optional and can be -nr or -r.  
+- The first argument is optional and can be -nr or -r.  
 "-nr" means search only in the current folder.   
 "-r" means recursively search current folder and all subfolders.(default case)   
   e.g.  "count lines in the current folder for .h, .hpp and .cpp files"  
@@ -29,7 +29,7 @@ e.g. "count lines in the current folder and subfolders recursively for .h, .hpp 
   "count lines the current folder for .txt files only"  
   **clocw -nr txt**  
 
-- The second and other arguments can be file extensions which have to be considered for counting lines.   
+- The first and other arguments can be file extensions which have to be considered for counting lines.   
 e.g.  
 **clocw js**  
 **clocw py cpp h**  
