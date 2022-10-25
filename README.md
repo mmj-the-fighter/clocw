@@ -17,31 +17,23 @@ loc.txt will contain the number of lines in the project
 
 ## Advanced usage
 
-If no argument is given clocw will look for source file extensions with .cpp, .h and .hpp.  
+- If no argument is given clocw will look for source file extensions with .cpp, .h and .hpp.    
 e.g. "count lines in the current folder and subfolders recursively for .h, .hpp and .cpp files"  
-clocw  
+**clocw**  
   
-The second argument is optional and can be -nr or -r.  
--nr means search only in the current folder.   
--r means recursively search current folder and all subfolders.(default case)   
+- The second argument is optional and can be -nr or -r.  
+"-nr" means search only in the current folder.   
+"-r" means recursively search current folder and all subfolders.(default case)   
+  e.g.  "count lines in the current folder for .h, .hpp and .cpp files"  
+  **clocw -nr**  
+  "count lines the current folder for .txt files only"  
+  **clocw -nr txt**  
+
+- The second and other arguments can be file extensions which have to be considered for counting lines.   
+e.g.  
+**clocw js**  
+**clocw py cpp h**  
   
-e.g.  
-"count lines in the current folder for .h, .hpp and .cpp files"  
-clocw -nr   
-
-"count lines the current folder for .txt files only"  
-clocw -nr txt :   
-
-The second and other arguments can be file extensions which have to be considered   
-for counting lines.  
-
-e.g.  
-clocw js  
-clocw py cpp h  
-  
-If * is added as a file extension in the argument, all filetypes will be considered for   
-counting lines.  
-
-e.g.  
-"count lines in the current folder and subfolders recursively for all types of files"   
-clocw *  
+- If * is added as a file extension in the argument, all filetypes will be considered for counting lines.  
+e.g. "count lines in the current folder and subfolders recursively for all types of files"  
+**clocw \***  
