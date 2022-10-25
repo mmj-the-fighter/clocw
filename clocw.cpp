@@ -1,30 +1,8 @@
-/*Attributions:
+/*
+Attribution:
 https://stackoverflow.com/users/13566062/song-zhu has written major parts of ProcessFiles function
 Stackoverflow Post : https://stackoverflow.com/questions/63386581/how-can-you-iterate-though-directories-without-using-any-recursive-functions-in
 */
-
-/*
-Program for counting lines of code in C++ projects.
-It can be modified to work for any type of project.
-Just populate the std::unordered_set<std::wstring> sourcefile_extensions with the desired extensions.
-*/
-
-/*
-Its a command line utility. For smooth workflow follow these steps.
-After building this file into an exe, store the exe into a folder and add that folder path to 
-Windows environment variables
-How to do that: https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)
-*/
-
-/*
-Usage: go to the directory you want to count lines of code recursively. type clocw and hit enter.
-or 
-Make a .bat file with the command "clocw > log.txt" in the source code directory and execute that .bat file.
-log.txt will contain the number of lines in the project
-*/
-
-
-
 #include <Windows.h>
 #include <tchar.h>
 #include <iostream>
