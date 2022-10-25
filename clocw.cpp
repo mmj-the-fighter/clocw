@@ -40,8 +40,8 @@ class QuickProfiler
 public:
 	std::chrono::system_clock::time_point t0;
 	long long millis;
-	float seconds;
-	float diff;
+	double seconds;
+	long long diff;
 
 	inline void Start() 
 	{
@@ -54,7 +54,7 @@ public:
 		system_clock::time_point t1 = high_resolution_clock::now();
 		millis = duration_cast<milliseconds>(t1 - t0).count();
 		diff = (t1 - t0).count();
-		seconds = millis / 1000;
+		seconds = (double)millis / 1000.0;
 	}
 };
 
