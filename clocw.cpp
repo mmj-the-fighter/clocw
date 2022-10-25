@@ -1,6 +1,6 @@
 /*
 Attribution:
-https://stackoverflow.com/users/13566062/song-zhu has written major parts of ProcessFiles function
+https://stackoverflow.com/users/13566062/song-zhu has written major parts of ProcessFiles function.
 Stackoverflow Post : https://stackoverflow.com/questions/63386581/how-can-you-iterate-though-directories-without-using-any-recursive-functions-in
 */
 #include <Windows.h>
@@ -21,12 +21,12 @@ public:
 	double seconds;
 	long long diff;
 
-	inline void Start() 
+	inline void Start()
 	{
 		t0 = std::chrono::high_resolution_clock::now();
 	}
 
-	inline void Stop() 
+	inline void Stop()
 	{
 		using namespace std::chrono;
 		system_clock::time_point t1 = high_resolution_clock::now();
@@ -51,7 +51,7 @@ int ReadExtensionFromPath(TCHAR* path, TCHAR* extension)
 	if (i == 0) {
 		return -1;
 	}
-		
+
 
 	//read from last char till a dot
 	--i;
@@ -96,6 +96,8 @@ bool IsDesiredFileType(TCHAR* filename, std::unordered_set<std::wstring> sourcef
 	TCHAR extension[MAX_PATH];
 	ReadExtensionFromPath(filename, extension);
 	std::wstring ext(extension);
+	
+
 
 	if (sourcefile_extensions.find(ext) != sourcefile_extensions.end())
 		return true;
@@ -112,24 +114,32 @@ unsigned int CountLines(const wchar_t *filename)
 	while ((ch = fgetc(f)) != EOF)
 		if (ch == '\n')
 			++lc;
+	++lc;
 	fclose(f);
 	return lc;
 }
 
-unsigned int ProcessFiles(std::wstring path, std::unordered_set<std::wstring> sourcefile_extensions)
+unsigned int ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<std::wstring> sourcefile_extensions)
 {
+	bool isAllFilesToBeProcessed = false;
+	std::wstring allfilesext = L"*";
+	if (sourcefile_extensions.find(allfilesext) == sourcefile_extensions.end())
+		isAllFilesToBeProcessed = false;
+	else
+		isAllFilesToBeProcessed = true;
+
 	unsigned int linecount = 0;
 	std::queue<std::wstring> qFolders;
-	qFolders.push(path);
+	qFolders.push(sourcepath);
 
 	WIN32_FIND_DATA findResult;
 	HANDLE handle = NULL;
 
 	while (qFolders.size() > 0)
 	{
-		std::wstring temp = qFolders.front();
-		temp.append(_T("\\*"));
-		handle = FindFirstFile(temp.c_str(), &findResult);
+		std::wstring path = qFolders.front();
+		path.append(_T("\\*"));
+		handle = FindFirstFile(path.c_str(), &findResult);
 		do
 		{
 			if (findResult.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -138,18 +148,22 @@ unsigned int ProcessFiles(std::wstring path, std::unordered_set<std::wstring> so
 				{
 					continue;
 				}
-				temp = qFolders.front();
-				temp.append(_T("\\")).append(findResult.cFileName);
-				qFolders.push(temp);
+				if (isRecursive)
+				{
+					path = qFolders.front();
+					path.append(_T("\\")).append(findResult.cFileName);
+					qFolders.push(path);
+				}
 			}
 			else {
 				//wcout << findResult.cFileName << endl;
-				if (IsDesiredFileType(findResult.cFileName, sourcefile_extensions))
+				if (isAllFilesToBeProcessed || 
+					IsDesiredFileType(findResult.cFileName, sourcefile_extensions))
 				{
-					temp = qFolders.front();
-					temp.append(_T("\\")).append(findResult.cFileName);
-					//wcout << temp << endl;
-					linecount += CountLines(temp.c_str());
+					path = qFolders.front();
+					path.append(_T("\\")).append(findResult.cFileName);
+					//wcout << path << endl;
+					linecount += CountLines(path.c_str());
 					//cout << linecount << endl;
 				}
 
@@ -164,10 +178,11 @@ unsigned int ProcessFiles(std::wstring path, std::unordered_set<std::wstring> so
 	}
 	return linecount;
 }
-
-int main()
+//D:\sample>clocw js
+int _tmain(int argc, _TCHAR* argv[])
 {
 	QuickProfiler profiler;
+	std::unordered_set<std::wstring> sourcefile_extensions;
 	TCHAR currentDirectory[MAX_PATH];
 	DWORD result;
 	profiler.Start();
@@ -177,19 +192,59 @@ int main()
 		return 1;
 	}
 
-	std::unordered_set<std::wstring> sourcefile_extensions = { 
-		_T("c"), 
-		_T("cpp"), 
-		_T("cxx"), 
-		_T("cc"), 
-		_T("hpp"), 
-		_T("h") };
-	///ProcessFiles(_T("D:\\sample"));
-	unsigned int linecount = ProcessFiles(currentDirectory,sourcefile_extensions);
+	bool isRecursive = true;
+	std::wstring nonRecursiveOption = L"-nr";
+	std::wstring recursiveOption = L"-r";
+	if (argc == 1)
+	{
+		sourcefile_extensions.insert(_T("cpp"));
+		sourcefile_extensions.insert(_T("h"));
+		sourcefile_extensions.insert(_T("hpp"));
+	}
+	else if (argc == 2)
+	{
+		std::wstring option = std::wstring(argv[1]);
+		if (option == nonRecursiveOption){
+			isRecursive = false;
+			sourcefile_extensions.insert(_T("cpp"));
+			sourcefile_extensions.insert(_T("h"));
+			sourcefile_extensions.insert(_T("hpp"));
+		}
+		else if (option == recursiveOption){
+			isRecursive = true;
+			sourcefile_extensions.insert(_T("cpp"));
+			sourcefile_extensions.insert(_T("h"));
+			sourcefile_extensions.insert(_T("hpp"));
+		}
+		else{
+			sourcefile_extensions.insert(option);
+		}
+	}
+	else
+	{
+		std::wstring option = std::wstring(argv[1]);
+		if (option == nonRecursiveOption){
+			isRecursive = false;
+		}
+		else if (option == recursiveOption){
+			isRecursive = true;
+		}
+		else{
+			sourcefile_extensions.insert(option);
+		}
+
+		for (int i = 2; i < argc; i++)
+		{
+			std::wstring option = std::wstring(argv[i]);
+			sourcefile_extensions.insert(option);
+		}
+	}
+	 
+	//unsigned int linecount = ProcessFiles(_T("D:\\Sample"), true, sourcefile_extensions);
+	unsigned int linecount = ProcessFiles(currentDirectory, isRecursive, sourcefile_extensions);
 	profiler.Stop();
-	std::cout << "Lines Of C++ Code: " << linecount << std::endl;
+	std::cout << "Lines Of Code: " << linecount << std::endl;
 	std::cout << "Processing time: " << profiler.seconds << " Seconds"
 		<< "(" << profiler.millis << " Milliseconds)" << std::endl;
 	return 0;
 }
-
