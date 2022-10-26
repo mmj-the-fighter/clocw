@@ -11,6 +11,8 @@ Stackoverflow Post : https://stackoverflow.com/questions/63386581/how-can-you-it
 #include <vector>
 #include <unordered_set>
 #include <chrono>
+#include <stdio.h>
+
 
 
 class QuickProfiler
@@ -103,8 +105,6 @@ bool IsDesiredFileType(TCHAR* filename, std::unordered_set<std::wstring> sourcef
 		return false;
 }
 
-
-
 //For analyzing C, C++, Java, C# code comments and source poritions
 void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *psloc)
 {
@@ -115,8 +115,22 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 	int foundSLComment = 0;
 	int foundMLComment = 0;
 	int fwslashcount = 0;
+
+#define BUFFERSIZE_CLOCW 4096
+	static char buffer[BUFFERSIZE_CLOCW];
 	FILE* f;
 	_wfopen_s(&f, filename, L"r");
+	if (f == NULL) {
+		std::wcout << "Cannot Open : " << filename << std::endl;
+		return;
+	}
+		
+	if (setvbuf(f, buffer, _IOFBF, BUFFERSIZE_CLOCW) != 0)
+	{
+		std::cout << "setvbuf failed" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
 	while ((ch = fgetc(f)) != EOF)
 	{
 		//std::cout << (char)ch;
@@ -159,9 +173,9 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 	fclose(f);
 	*pploc += loc;
 	*psloc += sloc;
+#undef BUFFERSIZE_CLOCW
 }
 
-//Change this function to analyze other types of code
 //void CountLinesSkelton(const wchar_t *filename, unsigned int* pploc, unsigned int *psloc)
 //{
 //	unsigned int loc = 0;
@@ -171,6 +185,11 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 //
 //	FILE* f;
 //	_wfopen_s(&f, filename, L"r");
+//	if (f == NULL) {
+//		std::wcout << "Cannot Open : " << filename << std::endl;
+//		return;
+//	}
+//
 //	while ((ch = fgetc(f)) != EOF)
 //	{
 //		if (foundCode == 0){
@@ -318,8 +337,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//ProcessFiles(_T("D:\\sample1"), false, sourcefile_extensions, &physicalLinecount, &sourceLinecount);
 	ProcessFiles(currentDirectory, isRecursive, sourcefile_extensions, &physicalLinecount, &sourceLinecount);
 	profiler.Stop();
-	std::cout << "Lines Of Code (Physical): " << physicalLinecount << std::endl;
-	std::cout << "Lines Of Code (Source): " << sourceLinecount << std::endl;
+	std::cout << "Physical Lines Of Code (loc): " << physicalLinecount << std::endl;
+	std::cout << "Logical Lines Of Code (sloc): " << sourceLinecount << std::endl;
 	std::cout << "Processing time: " << profiler.seconds << " Seconds"
 		<< "(" << profiler.millis << " Milliseconds)" << std::endl;
 	return 0;
