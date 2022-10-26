@@ -1,5 +1,6 @@
 # clocw
-Windows command line utility for counting lines of code in a source code directory.
+Windows command line utility for counting lines of code in a source code directory.  
+It will count loc and sloc.
 
 ## Building
 Make an empty VisualStudio console application project and add the clocw.cpp file and build the project.
