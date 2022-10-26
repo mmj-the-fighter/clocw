@@ -1,5 +1,5 @@
 # clocw
-Windows command line utility for counting lines of code in C++ projects. 
+Windows command line utility for counting lines of code in a source code directory.
 
 ## Building
 Make an empty VisualStudio console application project and add the clocw.cpp file and build the project.
