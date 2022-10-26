@@ -97,29 +97,103 @@ bool IsDesiredFileType(TCHAR* filename, std::unordered_set<std::wstring> sourcef
 	ReadExtensionFromPath(filename, extension);
 	std::wstring ext(extension);
 	
-
-
 	if (sourcefile_extensions.find(ext) != sourcefile_extensions.end())
 		return true;
 	else
 		return false;
 }
 
-unsigned int CountLines(const wchar_t *filename)
+
+
+//For analyzing C, C++, Java, C# code comments and source poritions
+void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *psloc)
 {
-	unsigned int lc = 0;
-	int ch;
+	unsigned int loc = 0;
+	unsigned int sloc = 0;
+	int ch, prevChar = 0;
+	int foundCode = 0;
+	int foundSLComment = 0;
+	int foundMLComment = 0;
+	int fwslashcount = 0;
 	FILE* f;
 	_wfopen_s(&f, filename, L"r");
 	while ((ch = fgetc(f)) != EOF)
-		if (ch == '\n')
-			++lc;
-	++lc;
+	{
+		//std::cout << (char)ch;
+		if (foundSLComment == 0 && foundMLComment == 0 && foundCode == 0){
+			foundCode = isalnum(ch);
+		}
+		if (foundMLComment == 0){
+			if (ch == '/')
+			{
+				if (prevChar == '/'){
+					foundSLComment = 1;
+				}
+			}
+			else if (ch == '*'){
+				if (prevChar == '/' && foundSLComment == 0){
+					foundMLComment = 1;
+				}
+			}
+		}
+		else {
+			if (ch == '/' && prevChar == '*'){
+				foundMLComment = 0;
+			}
+		}
+
+		if (ch == '\n'){
+			++loc;
+			if (foundCode) {
+				++sloc;
+			}
+			foundCode = 0;
+			foundSLComment = 0;
+		}
+		prevChar = ch;
+	}
+	++loc;
+	if (foundCode) {
+		++sloc;
+	}
 	fclose(f);
-	return lc;
+	*pploc += loc;
+	*psloc += sloc;
 }
 
-unsigned int ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<std::wstring> sourcefile_extensions)
+//Change this function to analyze other types of code
+//void CountLinesSkelton(const wchar_t *filename, unsigned int* pploc, unsigned int *psloc)
+//{
+//	unsigned int loc = 0;
+//	unsigned int sloc = 0;
+//	int ch;
+//	int foundCode = 0;
+//
+//	FILE* f;
+//	_wfopen_s(&f, filename, L"r");
+//	while ((ch = fgetc(f)) != EOF)
+//	{
+//		if (foundCode == 0){
+//			foundCode = isalnum(ch);
+//		}
+//		if (ch == '\n'){
+//			++loc;
+//			if (foundCode) {
+//				++sloc;
+//			}
+//			foundCode = 0;
+//		}
+//	}
+//	++loc;
+//	if (foundCode) {
+//		++sloc;
+//	}
+//	fclose(f);
+//	*pploc = loc;
+//	*psloc = sloc;
+//}
+
+void ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<std::wstring> sourcefile_extensions, unsigned int* pphysicalLinecount, unsigned int *psourceLinecount)
 {
 	bool isAllFilesToBeProcessed = false;
 	std::wstring allfilesext = L"*";
@@ -128,7 +202,6 @@ unsigned int ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unorde
 	else
 		isAllFilesToBeProcessed = true;
 
-	unsigned int linecount = 0;
 	std::queue<std::wstring> qFolders;
 	qFolders.push(sourcepath);
 
@@ -163,7 +236,8 @@ unsigned int ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unorde
 					path = qFolders.front();
 					path.append(_T("\\")).append(findResult.cFileName);
 					//wcout << path << endl;
-					linecount += CountLines(path.c_str());
+					CountLines(path.c_str(), pphysicalLinecount, psourceLinecount);
+					//CountLinesSkelton(path.c_str(), pphysicalLinecount, psourceLinecount);
 					//cout << linecount << endl;
 				}
 
@@ -176,11 +250,12 @@ unsigned int ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unorde
 		FindClose(handle);
 		handle = NULL;
 	}
-	return linecount;
 }
 //D:\sample>clocw js
 int _tmain(int argc, _TCHAR* argv[])
 {
+	unsigned int physicalLinecount = 0;
+	unsigned int sourceLinecount = 0;
 	QuickProfiler profiler;
 	std::unordered_set<std::wstring> sourcefile_extensions;
 	TCHAR currentDirectory[MAX_PATH];
@@ -240,10 +315,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 	 
-	//unsigned int linecount = ProcessFiles(_T("D:\\Sample"), true, sourcefile_extensions);
-	unsigned int linecount = ProcessFiles(currentDirectory, isRecursive, sourcefile_extensions);
+	//ProcessFiles(_T("D:\\sample1"), false, sourcefile_extensions, &physicalLinecount, &sourceLinecount);
+	ProcessFiles(currentDirectory, isRecursive, sourcefile_extensions, &physicalLinecount, &sourceLinecount);
 	profiler.Stop();
-	std::cout << "Lines Of Code: " << linecount << std::endl;
+	std::cout << "Lines Of Code (Physical): " << physicalLinecount << std::endl;
+	std::cout << "Lines Of Code (Source): " << sourceLinecount << std::endl;
 	std::cout << "Processing time: " << profiler.seconds << " Seconds"
 		<< "(" << profiler.millis << " Milliseconds)" << std::endl;
 	return 0;
