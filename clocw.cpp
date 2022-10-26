@@ -270,7 +270,7 @@ void ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<
 		handle = NULL;
 	}
 }
-//D:\sample>clocw js
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	unsigned int physicalLinecount = 0;
