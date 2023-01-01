@@ -361,7 +361,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::cout << "Physical Lines Of Code (loc): " << codeProps.loc << "\n";
 	std::cout << "Logical Lines Of Code (sloc): " << codeProps.sloc << "\n";
 	//std::cout << "Commented Lines Of Code: " << codeProps.locInComments << "\n";
-	std::cout << "Number of Folders: " << codeProps.folderCount << "\n";
+	std::cout << "Number of Folders Searched: " << codeProps.folderCount << "\n";
 	std::cout << "Number of Files: " << codeProps.fileCount << "\n";
 	std::cout << "Processing time: " << profiler.seconds << " Seconds"
 		<< "(" << profiler.millis << " Milliseconds)\n";
