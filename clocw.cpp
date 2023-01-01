@@ -1,7 +1,8 @@
 /*
 Attribution:
 https://stackoverflow.com/users/13566062/song-zhu has written major parts of ProcessFiles function.
-Stackoverflow Post : https://stackoverflow.com/questions/63386581/how-can-you-iterate-though-directories-without-using-any-recursive-functions-in
+Stackoverflow Post : 
+https://stackoverflow.com/questions/63386581/how-can-you-iterate-though-directories-without-using-any-recursive-functions-in
 */
 #include <Windows.h>
 #include <tchar.h>
@@ -18,7 +19,7 @@ Stackoverflow Post : https://stackoverflow.com/questions/63386581/how-can-you-it
 class QuickProfiler
 {
 public:
-	std::chrono::system_clock::time_point t0;
+	std::chrono::high_resolution_clock::time_point t0;
 	long long millis;
 	double seconds;
 	long long diff;
@@ -31,11 +32,23 @@ public:
 	inline void Stop()
 	{
 		using namespace std::chrono;
-		system_clock::time_point t1 = high_resolution_clock::now();
+		high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 		millis = duration_cast<milliseconds>(t1 - t0).count();
 		diff = (t1 - t0).count();
-		seconds = (double)millis / 1000.0;
+		seconds = static_cast<double>(millis / 1000.0);
 	}
+};
+
+struct SourceCodeProperties
+{
+	unsigned int loc;
+	unsigned int sloc;
+	unsigned int locInComments;//TODO
+	unsigned int locInBlankLines;//TODO
+	unsigned int folderCount;//TODO
+	unsigned int fileCount;
+	SourceCodeProperties() :loc(0), sloc(0), locInComments(0),
+		locInBlankLines(0), folderCount(0), fileCount(0){}
 };
 
 int ReadExtensionFromPath(TCHAR* path, TCHAR* extension)
@@ -106,7 +119,7 @@ bool IsDesiredFileType(TCHAR* filename, std::unordered_set<std::wstring> sourcef
 }
 
 //For analyzing C, C++, Java, C# code comments and source poritions
-void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *psloc)
+void CountLines(const wchar_t *filename, SourceCodeProperties* pCodeProps)
 {
 	unsigned int loc = 0;
 	unsigned int sloc = 0;
@@ -121,13 +134,13 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 	FILE* f;
 	_wfopen_s(&f, filename, L"r");
 	if (f == NULL) {
-		std::wcout << "Cannot Open : " << filename << std::endl;
+		std::wcout << "Cannot Open : " << filename << "\n";
 		return;
 	}
 		
 	if (setvbuf(f, buffer, _IOFBF, BUFFERSIZE_CLOCW) != 0)
 	{
-		std::cout << "setvbuf failed" << std::endl;
+		std::cout << "setvbuf failed\n";
 		exit(EXIT_FAILURE);
 	}
 
@@ -171,8 +184,8 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 		++sloc;
 	}
 	fclose(f);
-	*pploc += loc;
-	*psloc += sloc;
+	pCodeProps->loc += loc;
+	pCodeProps->sloc += sloc;
 #undef BUFFERSIZE_CLOCW
 }
 
@@ -186,7 +199,7 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 //	FILE* f;
 //	_wfopen_s(&f, filename, L"r");
 //	if (f == NULL) {
-//		std::wcout << "Cannot Open : " << filename << std::endl;
+//		std::wcout << "Cannot Open : " << filename << "\n";
 //		return;
 //	}
 //
@@ -212,7 +225,11 @@ void CountLines(const wchar_t *filename, unsigned int* pploc, unsigned int *pslo
 //	*psloc = sloc;
 //}
 
-void ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<std::wstring> sourcefile_extensions, unsigned int* pphysicalLinecount, unsigned int *psourceLinecount)
+void ProcessFiles(
+	std::wstring sourcepath, 
+	bool isRecursive, 
+	std::unordered_set<std::wstring> sourcefile_extensions, 
+	SourceCodeProperties *pCodeProps)
 {
 	bool isAllFilesToBeProcessed = false;
 	std::wstring allfilesext = L"*";
@@ -236,26 +253,31 @@ void ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<
 		{
 			if (findResult.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
-				if (lstrcmp(_T("."), findResult.cFileName) == 0 || lstrcmp(_T(".."), findResult.cFileName) == 0)
+				if (lstrcmp(_T("."), 
+					findResult.cFileName) == 0 || 
+					lstrcmp(_T(".."), findResult.cFileName) == 0)
 				{
 					continue;
 				}
 				if (isRecursive)
 				{
+					++pCodeProps->folderCount;
 					path = qFolders.front();
 					path.append(_T("\\")).append(findResult.cFileName);
 					qFolders.push(path);
 				}
 			}
 			else {
-				//wcout << findResult.cFileName << endl;
+				//std::wcout << findResult.cFileName << std::endl;
 				if (isAllFilesToBeProcessed || 
 					IsDesiredFileType(findResult.cFileName, sourcefile_extensions))
 				{
+					std::wcout << findResult.cFileName << std::endl;
+					++pCodeProps->fileCount;
 					path = qFolders.front();
 					path.append(_T("\\")).append(findResult.cFileName);
 					//wcout << path << endl;
-					CountLines(path.c_str(), pphysicalLinecount, psourceLinecount);
+					CountLines(path.c_str(), pCodeProps);
 					//CountLinesSkelton(path.c_str(), pphysicalLinecount, psourceLinecount);
 					//cout << linecount << endl;
 				}
@@ -271,10 +293,15 @@ void ProcessFiles(std::wstring sourcepath, bool isRecursive, std::unordered_set<
 	}
 }
 
+void AddDefaultFileTypes(std::unordered_set<std::wstring>& sourcefile_extensions)
+{
+	sourcefile_extensions.insert(_T("cpp"));
+	sourcefile_extensions.insert(_T("h"));
+	sourcefile_extensions.insert(_T("hpp"));
+}
 int _tmain(int argc, _TCHAR* argv[])
 {
-	unsigned int physicalLinecount = 0;
-	unsigned int sourceLinecount = 0;
+	SourceCodeProperties codeProps;
 	QuickProfiler profiler;
 	std::unordered_set<std::wstring> sourcefile_extensions;
 	TCHAR currentDirectory[MAX_PATH];
@@ -291,24 +318,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::wstring recursiveOption = L"-r";
 	if (argc == 1)
 	{
-		sourcefile_extensions.insert(_T("cpp"));
-		sourcefile_extensions.insert(_T("h"));
-		sourcefile_extensions.insert(_T("hpp"));
+		AddDefaultFileTypes(sourcefile_extensions);
 	}
 	else if (argc == 2)
 	{
 		std::wstring option = std::wstring(argv[1]);
 		if (option == nonRecursiveOption){
 			isRecursive = false;
-			sourcefile_extensions.insert(_T("cpp"));
-			sourcefile_extensions.insert(_T("h"));
-			sourcefile_extensions.insert(_T("hpp"));
+			AddDefaultFileTypes(sourcefile_extensions);
 		}
 		else if (option == recursiveOption){
 			isRecursive = true;
-			sourcefile_extensions.insert(_T("cpp"));
-			sourcefile_extensions.insert(_T("h"));
-			sourcefile_extensions.insert(_T("hpp"));
+			AddDefaultFileTypes(sourcefile_extensions);
 		}
 		else{
 			sourcefile_extensions.insert(option);
@@ -334,12 +355,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 	 
-	//ProcessFiles(_T("D:\\sample1"), false, sourcefile_extensions, &physicalLinecount, &sourceLinecount);
-	ProcessFiles(currentDirectory, isRecursive, sourcefile_extensions, &physicalLinecount, &sourceLinecount);
+	//ProcessFiles(_T("D:\\sample1")
+	ProcessFiles(currentDirectory, isRecursive, sourcefile_extensions, &codeProps);
 	profiler.Stop();
-	std::cout << "Physical Lines Of Code (loc): " << physicalLinecount << std::endl;
-	std::cout << "Logical Lines Of Code (sloc): " << sourceLinecount << std::endl;
+	std::cout << "Physical Lines Of Code (loc): " << codeProps.loc << "\n";
+	std::cout << "Logical Lines Of Code (sloc): " << codeProps.sloc << "\n";
+	//std::cout << "Commented Lines Of Code: " << codeProps.locInComments << "\n";
+	std::cout << "Number of Folders: " << codeProps.folderCount << "\n";
+	std::cout << "Number of Files: " << codeProps.fileCount << "\n";
 	std::cout << "Processing time: " << profiler.seconds << " Seconds"
-		<< "(" << profiler.millis << " Milliseconds)" << std::endl;
+		<< "(" << profiler.millis << " Milliseconds)\n";
 	return 0;
 }
