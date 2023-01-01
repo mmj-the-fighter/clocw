@@ -272,7 +272,7 @@ void ProcessFiles(
 				if (isAllFilesToBeProcessed || 
 					IsDesiredFileType(findResult.cFileName, sourcefile_extensions))
 				{
-					std::wcout << findResult.cFileName << std::endl;
+					//std::wcout << findResult.cFileName << std::endl;
 					++pCodeProps->fileCount;
 					path = qFolders.front();
 					path.append(_T("\\")).append(findResult.cFileName);
